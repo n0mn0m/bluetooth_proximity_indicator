@@ -73,15 +73,20 @@ known_notifications = set()
 found_color_count = 0
 sleeping = 0
 
+DEFAULT_COLOR = "PURPLE"
+LAST_COLOR = None
+
+color_chase(DEFAULT_COLOR, wait=.5)
+
 while not radio.connected:
     """
     If we are not connected sleep for 6 seconds unless
     it's been 15 minutes. After 15 minutes do a rainbow
     cycle and go to sleep for 5 minutes.
     """
-    color_chase(COLORS["OFF"], wait=.5)
     if sleeping == 150:
         rainbow()
+        color_chase(COLORS["OFF"], wait=.5)
         time.sleep(300)
         sleeping == 0
     time.sleep(6)
@@ -97,6 +102,8 @@ while radio.connected:
     for connection in radio.connections:
         if not connection.paired:
             connection.pair()
+            if LAST_COLOR:
+                color_chase(LAST_COLOR, wait=.5)
             sleeping = 0
 
         ans = connection[AppleNotificationService]
@@ -109,6 +116,7 @@ while radio.connected:
                         found_color_count = 0
                     color_chase(COLORS[notification.message.upper()], wait=.5)
                     found_color_count += 1
+                    LAST_COLOR = COLORS[notification.message.upper()]
 
     time.sleep(1)
 
