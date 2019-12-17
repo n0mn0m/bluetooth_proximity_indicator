@@ -76,7 +76,7 @@ sleeping = 0
 DEFAULT_COLOR = "PURPLE"
 LAST_COLOR = None
 
-color_chase(DEFAULT_COLOR, wait=.5)
+color_chase(COLORS[DEFAULT_COLOR], wait=.5)
 
 while not radio.connected:
     """
@@ -118,5 +118,5 @@ while radio.connected:
                     found_color_count += 1
                     LAST_COLOR = COLORS[notification.message.upper()]
 
-    time.sleep(1)
+    time.sleep(3)
 
