@@ -126,10 +126,10 @@ while True:
             sleeping = True
         else:
             # Sleeping for 15 minutes, but waking to check the
-            # switch every 5 minutes.
-            if sleep_cycles < 3:
+            # switch every minute.
+            if sleep_cycles < 15:
                 sleep_cycles += 1
-                time.sleep(300)
+                time.sleep(60)
             else:
                 sleep_cycles = 0
                 sleeping = False
@@ -138,3 +138,5 @@ while True:
         color_chase(COLORS["OFF"], wait=0.5)
         first_cycle = True
         scan_count = 0
+        sleeping = False
+        sleep_cycles = 0
