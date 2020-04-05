@@ -4,10 +4,14 @@ local connectable devices and based on the count changes pixel colors.
 """
 
 import time
+import board
+import neopixel
+import analogio
+import supervisor
 
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising import Advertisement
-from adafruit_circuitplayground.bluefruit import cpb
+
 
 # NEOPIXEL RGB values
 COLORS = {
@@ -24,27 +28,6 @@ COLORS = {
 }
 
 
-def color_chase(color, wait):
-    """
-    Rotate through the neopixels setting the new color.
-    """
-    for i in range(10):
-        cpb.pixels[i] = color
-        time.sleep(wait)
-    time.sleep(0.5)
-
-
-def rainbow(wait=0.1):
-    """
-    Cycle through the RGB spectrum and set the new neopixel color.
-    """
-    for j in range(255):
-        for i in range(len(cpb.pixels)):
-            idx = int(i + j)
-            cpb.pixels[i] = wheel(idx & 255)
-        time.sleep(wait)
-
-
 def wheel(pos):
     """
     Pick circuitplayground neopixel index.
@@ -58,6 +41,29 @@ def wheel(pos):
         return (0, 255 - pos * 3, pos * 3)
     pos -= 170
     return (pos * 3, 0, 255 - pos * 3)
+
+
+def color_chase(color, wait):
+    """
+    Rotate through the neopixels setting the new color.
+    """
+    for i in range(10):
+        pixels[i] = color
+        time.sleep(wait)
+        pixels.show()
+    time.sleep(0.5)
+
+
+def rainbow(wait=0.1):
+    """
+    Cycle through the RGB spectrum and set the new neopixel color.
+    """
+    for j in range(255):
+        for i in range(len(pixels)):
+            idx = int(i + j)
+            pixels[i] = wheel(idx & 255)
+        pixels.show()
+        time.sleep(wait)
 
 
 def local_scan(timeout=2):
@@ -92,8 +98,12 @@ def local_scan(timeout=2):
     return len(found)
 
 
+light = analogio.AnalogIn(board.LIGHT)
 ble = BLERadio()
-cpb.pixels.brightness = 0.1
+pixels = neopixel.NeoPixel(board.NEOPIXEL, 10, brightness=0.2, auto_write=False)
+pixels.fill((0, 0, 0))
+pixels.show()
+
 first_cycle = True
 
 # Only want to scan a few times before idling
@@ -104,39 +114,42 @@ scan_count = 0
 sleeping = False
 sleep_cycles = 0
 
-
 while True:
-    if cpb.switch:
-        if not sleeping:
+    print(light.value)
+    try:
+        if int(light.value) > 100:
             if first_cycle:
-                rainbow(0.01)
+                rainbow()
                 first_cycle = False
-            while scan_count < 3:
-                scan_count += 1
-                found = local_scan()
-                if found == 0 or found < 2:
-                    color_chase(COLORS["OFF"], wait=0.5)
-                if found > 0 and found < 5:
-                    color_chase(COLORS["RED"], wait=0.5)
-                if found >= 5:
-                    color_chase(COLORS["BLUE"], wait=0.5)
-                    color_chase(COLORS["PURPLE"], wait=0.5)
-                time.sleep(5)
-            # Stop scanning for 15 minutes
-            sleeping = True
-        else:
-            # Sleeping for 15 minutes, but waking to check the
-            # switch every minute.
-            if sleep_cycles < 15:
-                sleep_cycles += 1
-                time.sleep(60)
+                while scan_count < 3:
+                    scan_count += 1
+                    found = local_scan()
+                    if found == 0 or found < 2:
+                        color_chase(COLORS["OFF"], wait=0.5)
+                    if found > 0 and found < 5:
+                        color_chase(COLORS["RED"], wait=0.5)
+                    if found >= 5:
+                        color_chase(COLORS["BLUE"], wait=0.5)
+                        color_chase(COLORS["PURPLE"], wait=0.5)
+                    time.sleep(5)
+                # Stop scanning for 15 minutes
+                sleeping = True
             else:
-                sleep_cycles = 0
-                sleeping = False
-    else:
-        # Slide is off clear all pixels
-        color_chase(COLORS["OFF"], wait=0.5)
-        first_cycle = True
-        scan_count = 0
-        sleeping = False
-        sleep_cycles = 0
+                # Sleeping for 5 minutes, but waking to check the
+                # switch every minute.
+                if sleep_cycles < 5:
+                    sleep_cycles += 1
+                    time.sleep(60)
+                else:
+                    sleep_cycles = 0
+                    sleeping = False
+        else:
+            # It's dark lights out, clear all pixels
+            color_chase(COLORS["OFF"], wait=0.5)
+            first_cycle = True
+            scan_count = 0
+            sleeping = False
+            sleep_cycles = 0
+
+    except Exception:
+        supervisor.reload()
