@@ -117,32 +117,31 @@ sleep_cycles = 0
 while True:
     print(light.value)
     try:
-        if int(light.value) > 100:
-            if first_cycle:
-                rainbow()
-                first_cycle = False
-                while scan_count < 3:
-                    scan_count += 1
-                    found = local_scan()
-                    if found == 0 or found < 2:
-                        color_chase(COLORS["OFF"], wait=0.5)
-                    if found > 0 and found < 5:
-                        color_chase(COLORS["RED"], wait=0.5)
-                    if found >= 5:
-                        color_chase(COLORS["BLUE"], wait=0.5)
-                        color_chase(COLORS["PURPLE"], wait=0.5)
-                    time.sleep(5)
-                # Stop scanning for 15 minutes
-                sleeping = True
+        if int(light.value) > 300:
+            while scan_count < 3:
+                scan_count += 1
+                found = local_scan()
+                if found == 0 or found < 2:
+                    color_chase(COLORS["OFF"], wait=0.5)
+                if found > 0 and found < 5:
+                    color_chase(COLORS["RED"], wait=0.5)
+                if found >= 5:
+                    color_chase(COLORS["BLUE"], wait=0.5)
+                    color_chase(COLORS["PURPLE"], wait=0.5)
+                time.sleep(5)
+            # Stop scanning for 15 minutes
+            sleeping = True
+            # Sleeping for 5 minutes, but waking to check the
+            # switch every minute.
+            if sleep_cycles < 5:
+                sleep_cycles += 1
+                time.sleep(60)
             else:
-                # Sleeping for 5 minutes, but waking to check the
-                # switch every minute.
-                if sleep_cycles < 5:
-                    sleep_cycles += 1
-                    time.sleep(60)
-                else:
-                    sleep_cycles = 0
-                    sleeping = False
+                sleeping = False
+                sleep_cycles = 0
+                scan_count = 0
+                rainbow()
+                color_chase(COLORS["OFF"], wait=0.5)
         else:
             # It's dark lights out, clear all pixels
             color_chase(COLORS["OFF"], wait=0.5)
